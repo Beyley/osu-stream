@@ -30,11 +30,11 @@ namespace osum.GameplayElements
 
             BeatmapInfo = new pList<BeatmapInfo>();
 
-            if (File.Exists(databasePath))
+            if (File.Exists("/sdcard/" + databasePath))
             {
                 try
                 {
-                    using (FileStream fs = File.OpenRead(databasePath))
+                    using (FileStream fs = File.OpenRead("/sdcard/" + databasePath))
                     using (SerializationReader reader = new SerializationReader(fs))
                     {
                         Version = reader.ReadInt32();
@@ -82,7 +82,7 @@ namespace osum.GameplayElements
             Version = DATABASE_VERSION;
 
             string filename = databasePath;
-            string tempFilename = databasePath + "_";
+            string tempFilename = "/sdcard/" + databasePath + "_";
 
             //write to a new file and then move, just in case something bad was to happen when writing.
             using (FileStream fs = File.Create(tempFilename))
@@ -92,8 +92,8 @@ namespace osum.GameplayElements
                 writer.Write(BeatmapInfo);
             }
 
-            File.Delete(filename);
-            File.Move(tempFilename, filename);
+            //File.Delete(filename);
+            //File.Move(tempFilename, filename);
 
 #if DEBUG
             Console.WriteLine("Wrote beatmap database to " + filename + " with count " + BeatmapInfo.Count);

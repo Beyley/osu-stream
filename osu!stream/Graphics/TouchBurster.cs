@@ -54,7 +54,7 @@ namespace osum.Graphics
             BindInput = bindInput;
         }
 
-#if iOS
+#if iOS || ANDROID
         const int MAX_BURST = 32;
 #else
         private const int MAX_BURST = 512;
@@ -109,7 +109,7 @@ namespace osum.Graphics
 
         private void InputManager_OnMove(InputSource source, TrackingPoint trackingPoint)
         {
-#if iOS
+#if iOS || ANDROID
             if (InputManager.IsPressed && spacing++ % 1 == 0)
                 Burst(trackingPoint.BasePosition, 20, 0.5f, 1);
 #else
