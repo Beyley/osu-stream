@@ -1,8 +1,13 @@
-#if iOS
+#if iOS || ANDROID
 using OpenTK.Graphics.ES11;
+#if ANDROID
+using System.Drawing.Imaging;
+#endif
+#if iOS
 using Foundation;
 using ObjCRuntime;
 using OpenGLES;
+#endif
 
 using TextureTarget = OpenTK.Graphics.ES11.All;
 using TextureParameterName = OpenTK.Graphics.ES11.All;
@@ -23,8 +28,10 @@ using ShaderType = OpenTK.Graphics.ES11.All;
 using VertexAttribPointerType = OpenTK.Graphics.ES11.All;
 using ProgramParameter = OpenTK.Graphics.ES11.All;
 using ShaderParameter = OpenTK.Graphics.ES11.All;
+#if iOS
 using UIKit;
 using CoreGraphics;
+#endif
 #else
 using OpenTK.Graphics.OpenGL;
 using System.Drawing.Imaging;
@@ -35,7 +42,8 @@ using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using osum.AssetManager;
-
+using Android.Util;
+using Android.Graphics;
 
 namespace osum.Graphics
 {
@@ -119,7 +127,7 @@ namespace osum.Graphics
 
                 if (fboId >= 0)
                 {
-#if iOS
+#if iOS || ANDROID
                     GL.Oes.DeleteFramebuffers(1,ref fboId);
                     fboId = -1;
 
@@ -197,7 +205,11 @@ namespace osum.Graphics
         public static pTexture FromFile(string filename, bool mipmap)
         {
             //load base texture first...
-            if (!NativeAssetManager.Instance.FileExists(filename)) return null;
+            if (!NativeAssetManager.Instance.FileExists(filename))
+            {
+                System.Diagnostics.Debug.WriteLine("BOOO! WE FAILED TO LOAD");
+                return null;
+            }
 
             pTexture tex = null;
 
@@ -282,7 +294,11 @@ namespace osum.Graphics
 #endif
 #endif
 
-                if (tex == null) return null;
+                if (tex == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("BOOO! WE FAILED TO LOAD 2");
+                    return null;
+                }
 
                 //This makes sure we are always at the correct sprite resolution.
                 //Fucking hack, or fucking hax?
@@ -333,6 +349,19 @@ namespace osum.Graphics
             return FromStream(stream, assetname, false);
         }
 
+        public static byte[] ReadAllBytes(BinaryReader reader)
+        {
+            const int bufferSize = 4096*8;
+            using (var ms = new MemoryStream())
+            {
+                byte[] buffer = new byte[bufferSize];
+                int count;
+                while ((count = reader.Read(buffer, 0, buffer.Length)) != 0)
+                    ms.Write(buffer, 0, count);
+                return ms.ToArray();
+            }
+        }
+
         /// <summary>
         /// Read a pTexture from an arbritrary file.
         /// </summary>
@@ -344,10 +373,23 @@ namespace osum.Graphics
 #if iOS
                 pt = FromUIImage(UIImage.LoadFromData(NSData.FromStream(stream)),assetname);
 #else
-                using (Bitmap b = (Bitmap)Image.FromStream(stream, false, false))
+
+                BinaryReader binreader = new BinaryReader(stream);
+                var allData = ReadAllBytes(binreader);
+                Android.Graphics.Bitmap bitmap = BitmapFactory.DecodeByteArray(allData, 0, allData.Length);
+
+                pt = FromRawBytes(bitmap.LockPixels(), bitmap.Width, bitmap.Height);
+                pt.assetName = assetname;
+                bitmap.UnlockPixels();
+
+                /*System.Diagnostics.Debug.WriteLine("PART-0");
+                using (System.Drawing.Bitmap b = new System.Drawing.Bitmap(stream))
                 {
+                    System.Diagnostics.Debug.WriteLine("PART0");
                     BitmapData data = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadOnly,
                         System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    System.Diagnostics.Debug.WriteLine("PART1");
 
                     if (saveToFile)
                     {
@@ -356,15 +398,24 @@ namespace osum.Graphics
                         File.WriteAllBytes(assetname, bitmap);
                     }
 
+                    System.Diagnostics.Debug.WriteLine("PART2");
+
                     pt = FromRawBytes(data.Scan0, b.Width, b.Height);
+                    System.Diagnostics.Debug.WriteLine("PART3");
                     pt.assetName = assetname;
+                    System.Diagnostics.Debug.WriteLine("PART4");
                     b.UnlockBits(data);
-                }
+
+                    System.Diagnostics.Debug.WriteLine("PART5");
+                }*/
 #endif
                 return pt;
             }
-            catch
+            catch (Exception e)
             {
+                {
+                    System.Diagnostics.Debug.WriteLine(e.Message);
+                }
                 return null;
             }
         }
@@ -430,7 +481,8 @@ namespace osum.Graphics
             if (fboSingleton >= 0)
                 fboId = fboSingleton;
 
-#if iOS
+#if iOS || ANDROID
+            System.Diagnostics.Debug.WriteLine("VERB432 " + GL.GetError().ToString());
             int oldFBO = 0;
 
             GL.GetInteger(All.FramebufferBindingOes, out oldFBO);
@@ -441,6 +493,7 @@ namespace osum.Graphics
             GL.Oes.BindFramebuffer(All.FramebufferOes, fboId);
             GL.Oes.FramebufferTexture2D(All.FramebufferOes, All.ColorAttachment0Oes, All.Texture2D, TextureGl.Id, 0);
             GL.Oes.BindFramebuffer(All.FramebufferOes, oldFBO);
+            System.Diagnostics.Debug.WriteLine("VERB2324" + GL.GetError().ToString());
 #else
             try
             {

@@ -1,8 +1,10 @@
-﻿#if iOS
+﻿#if iOS || ANDROID
 using OpenTK.Graphics.ES11;
+#if iOS
 using Foundation;
 using ObjCRuntime;
 using OpenGLES;
+#endif
 
 using TextureTarget = OpenTK.Graphics.ES11.All;
 using TextureParameterName = OpenTK.Graphics.ES11.All;
@@ -148,7 +150,11 @@ namespace osum.Graphics
 
             PopulateSurfaces();
 
+#if !ANDROID
             GL.Clear(Constants.COLOR_BUFFER_BIT);
+#else
+            GL.Clear((OpenTK.Graphics.ES11.ClearBufferMask)Constants.COLOR_BUFFER_BIT);
+#endif
         }
 
         public static void RegisterDisposable(pTexture t)

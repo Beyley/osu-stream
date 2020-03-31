@@ -22,7 +22,7 @@ namespace osum.Support.Desktop
 
         protected override BackgroundAudioPlayer InitializeBackgroundAudio()
         {
-            return new BackgroundAudioPlayerDesktop();
+            return new BackgroundAudioPlayerCommon();
         }
 
         protected override SoundEffectPlayer InitializeSoundEffects()
